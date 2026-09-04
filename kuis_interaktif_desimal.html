@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Interaktif: Petualangan Desimal Kelas 4 SD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0f9ff;
+        }
+        
+        h1, h2, h3, .font-heading {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* Grid penataan bersusun desimal */
+        .math-grid {
+            display: grid;
+            grid-template-columns: 1.2rem 1.3rem 1.3rem 0.5rem 1.3rem 1.3rem;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 1.3rem;
+            line-height: 1.7rem;
+        }
+
+        .math-comma {
+            color: #ef4444;
+            font-weight: 900;
+            text-align: center;
+        }
+
+        /* Custom scrollbar untuk grid nomor soal */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 pb-12">
+
+    <!-- Header / Navbar Top -->
+    <header class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white p-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-blue-600 p-2 rounded-2xl shadow-inner text-2xl font-bold">
+                    📝
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-wide">Kuis Petualangan Desimal</h1>
+                    <p class="text-xs text-blue-100">30 Soal Penjumlahan & Pengurangan Desimal • Kelas 4 SD</p>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-md text-xs md:text-sm font-bold">
+                <div class="flex items-center gap-1.5 text-green-300">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span id="stat-correct">0</span>
+                </div>
+                <div class="w-px h-4 bg-white/30"></div>
+                <div class="flex items-center gap-1.5 text-red-300">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    <span id="stat-wrong">0</span>
+                </div>
+                <div class="w-px h-4 bg-white/30"></div>
+                <div class="flex items-center gap-1.5 text-yellow-300">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                    <span id="stat-remaining">30</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto mt-6 px-4">
+
+        <!-- Banner status offline/penyimpanan -->
+        <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-900 p-3 rounded-r-xl text-xs md:text-sm mb-6 flex justify-between items-center shadow-sm">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-floppy-disk text-blue-600 text-base"></i>
+                <span><strong>Progres Tersimpan Otomatis:</strong> Jawabanmu aman meski jaringan putus atau halaman ter-reload!</span>
+            </div>
+            <button onclick="confirmResetQuiz()" class="text-xs text-red-600 hover:text-red-800 font-bold underline ml-2 flex-shrink-0">
+                <i class="fa-solid fa-rotate-right mr-1"></i>Reset Kuis
+            </button>
+        </div>
+
+        <div class="grid lg:grid-cols-12 gap-6">
+
+            <!-- SIDEBAR NAVIGASI SOAL (30 NOMOR) -->
+            <aside id="sidebar-nav" class="lg:col-span-4 space-y-4 transition-all duration-300">
+                <div class="bg-white rounded-3xl p-5 shadow-xl border-2 border-slate-100 sticky top-24">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-slate-700 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-blue-600"></i> Navigasi Soal
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <span id="quiz-progress-text" class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+                                0 / 30 Dijawab
+                            </span>
+                            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 text-xs font-bold transition" title="Sembunyikan Navigasi">
+                                <i class="fa-solid fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-100 rounded-full h-2.5 mb-4 overflow-hidden">
+                        <div id="quiz-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+
+                    <!-- Grid Nomor Soal -->
+                    <div class="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto p-1 no-scrollbar" id="numbers-grid">
+                        <!-- Generasi dinamis via JS -->
+                    </div>
+
+                    <!-- Keterangan Warna Status -->
+                    <div class="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs text-slate-500">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Benar
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-rose-500"></span> Salah
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-blue-600"></span> Sedang Dibuka
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-slate-200"></span> Belum Diisi
+                        </div>
+                    </div>
+
+                    <!-- Tombol Ringkasan Hasil -->
+                    <button onclick="showResultsModal()" class="mt-5 w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-2.5 px-4 rounded-2xl shadow-md hover:brightness-105 transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-trophy"></i> Lihat Hasil Akhir Kuis
+                    </button>
+                </div>
+            </aside>
+
+            <!-- AREA KONTEN SOAL -->
+            <section id="main-content" class="lg:col-span-8 transition-all duration-300">
+                <div class="bg-white rounded-3xl p-6 md:p-8 shadow-xl border-4 border-blue-200 relative min-h-[480px] flex flex-col justify-between">
+                    
+                    <div>
+                        <!-- Header Soal (Nomor & Kategori) -->
+                        <div class="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <button id="btn-show-nav" onclick="toggleSidebar()" class="hidden bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-list-check"></i>
+                                    <span>Tampilkan Navigasi</span>
+                                </button>
+                                <span id="q-number-badge" class="bg-blue-600 text-white text-sm font-bold px-3 py-1 rounded-xl">
+                                    Soal #1
+                                </span>
+                                <span id="q-category-badge" class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-lg">
+                                    Hitungan Langsung
+                                </span>
+                            </div>
+                            <span id="q-status-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-500">
+                                Belum dijawab
+                            </span>
+                        </div>
+
+                        <!-- Teks Soal -->
+                        <div class="mb-6">
+                            <p id="q-text" class="text-slate-800 font-bold text-lg md:text-xl leading-relaxed">
+                                Loading soal...
+                            </p>
+                        </div>
+
+                        <!-- Tampilan Kisi Bersusun Tambahan (jika ada) -->
+                        <div id="q-math-grid-container" class="hidden mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200 w-fit mx-auto">
+                            <!-- Visual bersusun diinjeksi via JS -->
+                        </div>
+
+                        <!-- Opsi Jawaban (A, B, C, D) -->
+                        <div id="options-container" class="grid gap-3">
+                            <!-- Opsi diinjeksi via JS -->
+                        </div>
+
+                        <!-- Umpan Balik Instan (Penjelasan) -->
+                        <div id="feedback-box" class="hidden mt-6 p-4 rounded-2xl border-2 transition-all duration-300">
+                            <div class="flex items-start gap-3">
+                                <span id="feedback-icon" class="text-2xl"></span>
+                                <div>
+                                    <h4 id="feedback-title" class="font-bold text-sm mb-1"></h4>
+                                    <p id="feedback-text" class="text-xs md:text-sm text-slate-700 leading-relaxed"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigasi Bawah (Sebelumnya / Selanjutnya) -->
+                    <div class="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center gap-4">
+                        <button id="btn-prev" onclick="prevQuestion()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-5 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-arrow-left"></i> Sebelumnya
+                        </button>
+                        
+                        <span class="text-xs text-slate-400 font-bold hidden sm:inline" id="q-count-indicator">
+                            Soal 1 dari 30
+                        </span>
+
+                        <button id="btn-next" onclick="nextQuestion()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-md disabled:opacity-40 disabled:cursor-not-allowed">
+                            Selanjutnya <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- MODAL REKAP HASIL AKHIR -->
+    <div id="results-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl relative border-4 border-indigo-200 transform transition-all scale-95 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeResultsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold">
+                ✕
+            </button>
+
+            <div class="text-center mb-6">
+                <div id="modal-emoji" class="text-6xl mb-2">🏆</div>
+                <h3 class="text-2xl font-bold text-slate-800 font-heading">Hasil Kuis Desimal</h3>
+                <p class="text-xs text-slate-500">Ringkasan performa pengerjaan 30 soal</p>
+            </div>
+
+            <!-- Skor Utama -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-6 text-center shadow-lg mb-6">
+                <p class="text-xs uppercase tracking-widest font-bold text-blue-200 mb-1">Nilai Akhir Kamu</p>
+                <div class="text-5xl font-black mb-1" id="modal-final-score">0</div>
+                <p class="text-xs text-blue-100" id="modal-accuracy-text">Akurasi 0% (0 dari 30 Benar)</p>
+            </div>
+
+            <!-- Detail Statistik -->
+            <div class="grid grid-cols-3 gap-3 mb-6 text-center">
+                <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl">
+                    <p class="text-xs text-emerald-600 font-bold">Benar</p>
+                    <p id="modal-correct-count" class="text-xl font-bold text-emerald-700">0</p>
+                </div>
+                <div class="bg-rose-50 border border-rose-200 p-3 rounded-2xl">
+                    <p class="text-xs text-rose-600 font-bold">Salah</p>
+                    <p id="modal-wrong-count" class="text-xl font-bold text-rose-700">0</p>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl">
+                    <p class="text-xs text-amber-600 font-bold">Belum Diisi</p>
+                    <p id="modal-unanswered-count" class="text-xl font-bold text-amber-700">30</p>
+                </div>
+            </div>
+
+            <!-- Pesan Motivasi -->
+            <p id="modal-message" class="text-sm text-center text-slate-600 font-semibold mb-6">
+                Ayo selesaikan semua soal untuk mendapatkan nilai maksimal!
+            </p>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+                <button onclick="closeResultsModal()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-sm transition">
+                    Lanjut Mengerjakan
+                </button>
+                <button onclick="confirmResetQuiz()" class="w-1/2 bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-xl text-sm transition shadow-md">
+                    Ulangi Kuis 🔄
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data 30 Soal Penjumlahan dan Pengurangan Desimal
+        // Distribusi opsi jawaban disebar seimbang (A, B, C, D) secara acak tanpa pola terikat.
+        const quizData = [
+            {
+                id: 1,
+                category: "Hitungan Langsung",
+                type: "grid",
+                question: "Berapakah hasil dari 4,2 + 3,5?",
+                grid: { r1: ["", "", "4", ",", "2", ""], r2: ["+", "", "3", ",", "5", ""] },
+                options: ["7,7", "8,7", "7,5", "6,7"],
+                correctIdx: 0, // A
+                explanation: "Luruskan koma: 4,2 + 3,5. Penjumlahan dari kanan: 2+5 = 7, lalu 4+3 = 7. Hasilnya adalah 7,7."
+            },
+            {
+                id: 2,
+                category: "Hitungan Langsung",
+                type: "grid",
+                question: "Hasil dari 12,45 + 3,8 adalah...",
+                grid: { r1: ["", "1", "2", ",", "4", "5"], r2: ["+", "", "3", ",", "8", "0"] },
+                options: ["15,25", "16,25", "15,85", "16,45"],
+                correctIdx: 1, // B
+                explanation: "Tambahkan angka 0 di belakang 3,8 menjadi 3,80. Lalu jumlahkan 12,45 + 3,80 = 16,25."
+            },
+            {
+                id: 3,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hitunglah hasil pengurangan dari 8,9 - 4,3 =",
+                options: ["4,3", "4,8", "4,6", "5,6"],
+                correctIdx: 2, // C
+                explanation: "Luruskan tanda koma: 9 - 3 = 6, lalu 8 - 4 = 4. Hasil akhirnya 4,6."
+            },
+            {
+                id: 4,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Berapakah hasil dari 8,5 - 2,37?",
+                options: ["6,13", "6,23", "5,13", "6,17"],
+                correctIdx: 0, // A
+                explanation: "Ubah 8,5 menjadi 8,50. Pengurangan bersusun: 8,50 - 2,37 = 6,13."
+            },
+            {
+                id: 5,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Ibu membeli 2,5 kg tepung terigu dan 1,75 kg gula pasir. Berapakah total berat seluruh belanjaan Ibu?",
+                options: ["3,25 kg", "4,35 kg", "4,15 kg", "4,25 kg"],
+                correctIdx: 3, // D
+                explanation: "Total belanjaan = 2,50 kg + 1,75 kg = 4,25 kg."
+            },
+            {
+                id: 6,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hitunglah penjumlahan desimal berikut: 0,6 + 0,35 =",
+                options: ["0,41", "0,95", "0,91", "1,05"],
+                correctIdx: 1, // B
+                explanation: "0,60 + 0,35 = 0,95."
+            },
+            {
+                id: 7,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hasil pengurangan dari 5,4 - 1,8 adalah...",
+                options: ["3,6", "3,8", "4,4", "3,4"],
+                correctIdx: 0, // A
+                explanation: "Gunakan teknik meminjam: 14 - 8 = 6, sisa 4 - 1 = 3. Jadi hasil pengurangan = 3,6."
+            },
+            {
+                id: 8,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Andi berlari sejauh 2,4 km pada pagi hari dan 1,85 km pada sore hari. Berapa km total jarak yang ditempuh Andi hari ini?",
+                options: ["4,35 km", "4,25 km", "3,25 km", "4,15 km"],
+                correctIdx: 1, // B
+                explanation: "Total jarak = 2,40 km + 1,85 km = 4,25 km."
+            },
+            {
+                id: 9,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Berapakah hasil dari 15,67 + 8,54?",
+                options: ["23,21", "24,11", "24,21", "24,31"],
+                correctIdx: 2, // C
+                explanation: "Hitung bersusun dengan menyimpan: 15,67 + 8,54 = 24,21."
+            },
+            {
+                id: 10,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Berapakah hasil dari 12,3 - 5,68?",
+                options: ["6,62", "6,72", "7,62", "6,52"],
+                correctIdx: 0, // A
+                explanation: "Ubah 12,3 menjadi 12,30. Kemudian hitung 12,30 - 5,68 = 6,62."
+            },
+            {
+                id: 11,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Sebuah botol minuman berisi 1,5 liter air. Dino meminumnya sebanyak 0,65 liter. Berapa liter sisa air dalam botol tersebut?",
+                options: ["0,95 liter", "0,85 liter", "0,75 liter", "0,80 liter"],
+                correctIdx: 1, // B
+                explanation: "Sisa air = 1,50 liter - 0,65 liter = 0,85 liter."
+            },
+            {
+                id: 12,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hitunglah: 7,89 + 4,11 =",
+                options: ["11,90", "12,10", "11,00", "12,00"],
+                correctIdx: 3, // D
+                explanation: "7,89 + 4,11 = 12,00 atau cukup ditulis 12."
+            },
+            {
+                id: 13,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hasil dari 10,0 - 3,45 adalah...",
+                options: ["6,55", "7,55", "6,65", "6,45"],
+                correctIdx: 0, // A
+                explanation: "10,00 - 3,45 = 6,55."
+            },
+            {
+                id: 14,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Siti memiliki pita sepanjang 3,2 meter. Ia memberikan 1,45 meter pita tersebut kepada Lani. Berapa meter sisa pita Siti?",
+                options: ["1,65 meter", "1,75 meter", "1,85 meter", "2,25 meter"],
+                correctIdx: 1, // B
+                explanation: "Sisa pita = 3,20 m - 1,45 m = 1,75 meter."
+            },
+            {
+                id: 15,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hitunglah hasil dari: 0,25 + 0,45 + 0,3 =",
+                options: ["0,90", "1,00", "0,85", "1,10"],
+                correctIdx: 1, // B
+                explanation: "0,25 + 0,45 = 0,70. Lalu 0,70 + 0,30 = 1,00."
+            },
+            {
+                id: 16,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Berapakah hasil dari 9,1 - 2,84?",
+                options: ["6,36", "7,26", "6,26", "6,16"],
+                correctIdx: 2, // C
+                explanation: "9,10 - 2,84 = 6,26."
+            },
+            {
+                id: 17,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Paman menimbang dua ekor ikan mas. Ikan pertama berbobot 1,35 kg dan ikan kedua berbobot 2,4 kg. Berapa total berat kedua ikan mas tersebut?",
+                options: ["3,65 kg", "3,75 kg", "3,85 kg", "3,95 kg"],
+                correctIdx: 1, // B
+                explanation: "Total berat = 1,35 kg + 2,40 kg = 3,75 kg."
+            },
+            {
+                id: 18,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hasil penjumlahan 14,28 + 6,72 adalah...",
+                options: ["20,00", "21,00", "21,10", "20,90"],
+                correctIdx: 1, // B
+                explanation: "14,28 + 6,72 = 21,00 (atau 21)."
+            },
+            {
+                id: 19,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Berapakah nilai dari 6,5 - 0,85?",
+                options: ["5,75", "5,65", "5,85", "4,65"],
+                correctIdx: 1, // B
+                explanation: "6,50 - 0,85 = 5,65."
+            },
+            {
+                id: 20,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Tinggi badan Budi adalah 1,42 meter, sedangkan tinggi badan Ade adalah 1,28 meter. Berapakah selisih tinggi badan Budi dan Ade?",
+                options: ["0,12 meter", "0,24 meter", "0,14 meter", "0,18 meter"],
+                correctIdx: 2, // C
+                explanation: "Selisih tinggi = 1,42 m - 1,28 m = 0,14 meter."
+            },
+            {
+                id: 21,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hitunglah hasil dari: 20,5 + 4,75 =",
+                options: ["25,25", "25,35", "24,25", "25,15"],
+                correctIdx: 0, // A
+                explanation: "20,50 + 4,75 = 25,25."
+            },
+            {
+                id: 22,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hasil pengurangan dari 15,0 - 8,36 adalah...",
+                options: ["6,74", "6,64", "7,64", "6,54"],
+                correctIdx: 1, // B
+                explanation: "15,00 - 8,36 = 6,64."
+            },
+            {
+                id: 23,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Sebuah truk mengangkut 4,8 ton beras. Di gudang pertama, beras diturunkan sebanyak 2,25 ton. Berapa ton sisa beras di dalam truk?",
+                options: ["2,45 ton", "2,65 ton", "2,55 ton", "1,55 ton"],
+                correctIdx: 2, // C
+                explanation: "Sisa beras = 4,80 ton - 2,25 ton = 2,55 ton."
+            },
+            {
+                id: 24,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hitunglah: 3,12 + 5,4 + 1,25 =",
+                options: ["9,77", "9,67", "9,87", "8,77"],
+                correctIdx: 0, // A
+                explanation: "3,12 + 5,40 = 8,52. Lalu 8,52 + 1,25 = 9,77."
+            },
+            {
+                id: 25,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Berapakah hasil dari 7,0 - 3,15?",
+                options: ["3,95", "3,85", "4,85", "3,75"],
+                correctIdx: 1, // B
+                explanation: "7,00 - 3,15 = 3,85."
+            },
+            {
+                id: 26,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Edo mempunyai dua buah tali. Panjang tali pertama 2,75 meter dan tali kedua 1,6 meter. Berapa meter total panjang kedua tali Edo jika disambung?",
+                options: ["4,25 meter", "4,35 meter", "4,45 meter", "3,35 meter"],
+                correctIdx: 1, // B
+                explanation: "Total panjang = 2,75 m + 1,60 m = 4,35 meter."
+            },
+            {
+                id: 27,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Berapakah nilai dari 18,92 - 9,45?",
+                options: ["9,57", "9,37", "9,47", "8,47"],
+                correctIdx: 2, // C
+                explanation: "18,92 - 9,45 = 9,47."
+            },
+            {
+                id: 28,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Ibu memasak menggunakan 0,75 liter minyak goreng dari botol yang berisi 2,0 liter. Berapa liter sisa minyak dalam botol?",
+                options: ["1,35 liter", "1,15 liter", "1,25 liter", "1,45 liter"],
+                correctIdx: 2, // C
+                explanation: "Sisa minyak = 2,00 liter - 0,75 liter = 1,25 liter."
+            },
+            {
+                id: 29,
+                category: "Hitungan Langsung",
+                type: "text",
+                question: "Hitunglah hasil dari 11,55 + 4,45 =",
+                options: ["15,00", "16,10", "15,90", "16,00"],
+                correctIdx: 3, // D
+                explanation: "11,55 + 4,45 = 16,00 (atau 16)."
+            },
+            {
+                id: 30,
+                category: "Soal Cerita",
+                type: "text",
+                question: "Keluarga Pak Rahmat mengonsumsi 1,25 kg beras pada hari Senin dan 1,5 kg pada hari Selasa. Berapa total beras yang dikonsumsi selama dua hari tersebut?",
+                options: ["2,75 kg", "2,65 kg", "2,85 kg", "3,00 kg"],
+                correctIdx: 0, // A
+                explanation: "Total konsumsi beras = 1,25 kg + 1,50 kg = 2,75 kg."
+            }
+        ];
+
+        // State Aplikasi
+        let currentQIndex = 0;
+        let userAnswers = {}; // Store: { [qIndex]: optionIndex }
+        let isNavHidden = false;
+
+        function toggleSidebar() {
+            isNavHidden = !isNavHidden;
+            const sidebar = document.getElementById('sidebar-nav');
+            const mainContent = document.getElementById('main-content');
+            const btnShowNav = document.getElementById('btn-show-nav');
+
+            if (isNavHidden) {
+                sidebar.classList.add('hidden');
+                mainContent.classList.remove('lg:col-span-8');
+                mainContent.classList.add('lg:col-span-12');
+                if (btnShowNav) btnShowNav.classList.remove('hidden');
+            } else {
+                sidebar.classList.remove('hidden');
+                mainContent.classList.remove('lg:col-span-12');
+                mainContent.classList.add('lg:col-span-8');
+                if (btnShowNav) btnShowNav.classList.add('hidden');
+            }
+        }
+
+        const STORAGE_KEY = "kuis_desimal_sd_class4_user_answers";
+
+        // Load data dari LocalStorage saat startup
+        function loadSavedState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    userAnswers = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.warn("LocalStorage error:", e);
+            }
+        }
+
+        // Simpan data ke LocalStorage
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(userAnswers));
+            } catch (e) {
+                console.warn("Failed to save state:", e);
+            }
+        }
+
+        // Render Grid Nomor Soal di Sidebar Navigasi
+        function renderNumbersGrid() {
+            const container = document.getElementById('numbers-grid');
+            container.innerHTML = '';
+
+            quizData.forEach((q, idx) => {
+                const btn = document.createElement('button');
+                btn.onclick = () => goToQuestion(idx);
+
+                const isCurrent = idx === currentQIndex;
+                const answered = userAnswers.hasOwnProperty(idx);
+                const isCorrect = answered && userAnswers[idx] === q.correctIdx;
+
+                let classes = "w-full h-9 font-bold text-xs rounded-xl flex items-center justify-center transition border-2 ";
+
+                if (isCurrent) {
+                    classes += "border-blue-600 bg-blue-600 text-white shadow-md scale-105 z-10 ";
+                } else if (answered) {
+                    if (isCorrect) {
+                        classes += "border-emerald-500 bg-emerald-500 text-white ";
+                    } else {
+                        classes += "border-rose-500 bg-rose-500 text-white ";
+                    }
+                } else {
+                    classes += "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 ";
+                }
+
+                btn.className = classes;
+                btn.innerText = idx + 1;
+                container.appendChild(btn);
+            });
+
+            updateProgressStats();
+        }
+
+        // Update Statistik Navigasi
+        function updateProgressStats() {
+            let correct = 0;
+            let wrong = 0;
+            let answeredCount = 0;
+
+            quizData.forEach((q, idx) => {
+                if (userAnswers.hasOwnProperty(idx)) {
+                    answeredCount++;
+                    if (userAnswers[idx] === q.correctIdx) {
+                        correct++;
+                    } else {
+                        wrong++;
+                    }
+                }
+            });
+
+            const remaining = quizData.length - answeredCount;
+
+            document.getElementById('stat-correct').innerText = correct;
+            document.getElementById('stat-wrong').innerText = wrong;
+            document.getElementById('stat-remaining').innerText = remaining;
+
+            document.getElementById('quiz-progress-text').innerText = `${answeredCount} / 30 Dijawab`;
+            const pct = Math.round((answeredCount / 30) * 100);
+            document.getElementById('quiz-progress-bar').style.width = `${pct}%`;
+        }
+
+        // Render Tampilan Soal Aktif
+        function renderCurrentQuestion() {
+            const q = quizData[currentQIndex];
+
+            // Badges
+            document.getElementById('q-number-badge').innerText = `Soal #${currentQIndex + 1}`;
+            document.getElementById('q-category-badge').innerText = q.category;
+            document.getElementById('q-count-indicator').innerText = `Soal ${currentQIndex + 1} dari ${quizData.length}`;
+
+            // Status Badge
+            const statusBadge = document.getElementById('q-status-badge');
+            if (userAnswers.hasOwnProperty(currentQIndex)) {
+                statusBadge.innerText = "Sudah dijawab";
+                statusBadge.className = "text-xs font-bold px-3 py-1 rounded-full bg-blue-100 text-blue-700";
+            } else {
+                statusBadge.innerText = "Belum dijawab";
+                statusBadge.className = "text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-500";
+            }
+
+            // Text Soal
+            document.getElementById('q-text').innerText = q.question;
+
+            // Optional Math Grid
+            const mathGridContainer = document.getElementById('q-math-grid-container');
+            if (q.type === 'grid' && q.grid) {
+                mathGridContainer.classList.remove('hidden');
+                const buildGridRow = (arr) => arr.map(val => 
+                    val === ',' ? `<span class="math-comma">,</span>` : `<span>${val}</span>`
+                ).join('');
+
+                mathGridContainer.innerHTML = `
+                    <div class="math-grid text-slate-700">
+                        ${buildGridRow(q.grid.r1)}
+                        ${buildGridRow(q.grid.r2)}
+                    </div>
+                    <div class="border-b-2 border-slate-800 my-1 w-full"></div>
+                `;
+            } else {
+                mathGridContainer.classList.add('hidden');
+            }
+
+            // Opsi Jawaban
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            const isAnswered = userAnswers.hasOwnProperty(currentQIndex);
+            const userSelectedIdx = userAnswers[currentQIndex];
+
+            const optionLabels = ['A', 'B', 'C', 'D'];
+
+            q.options.forEach((optText, optIdx) => {
+                const btn = document.createElement('button');
+                btn.onclick = () => selectOption(optIdx);
+
+                let btnClasses = "w-full p-4 rounded-2xl border-2 font-bold text-left text-sm md:text-base flex items-center justify-between transition duration-200 ";
+
+                if (!isAnswered) {
+                    btnClasses += "border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 ";
+                } else {
+                    if (optIdx === q.correctIdx) {
+                        btnClasses += "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm ";
+                    } else if (optIdx === userSelectedIdx) {
+                        btnClasses += "border-rose-500 bg-rose-50 text-rose-800 shadow-sm ";
+                    } else {
+                        btnClasses += "border-slate-200 bg-slate-50/50 text-slate-400 opacity-60 ";
+                    }
+                }
+
+                btn.className = btnClasses;
+
+                // Label A, B, C, D
+                let labelStyle = "w-8 h-8 rounded-xl font-bold flex items-center justify-center mr-3 text-xs flex-shrink-0 ";
+                if (!isAnswered) {
+                    labelStyle += "bg-white border border-slate-300 text-slate-600";
+                } else if (optIdx === q.correctIdx) {
+                    labelStyle += "bg-emerald-500 text-white";
+                } else if (optIdx === userSelectedIdx) {
+                    labelStyle += "bg-rose-500 text-white";
+                } else {
+                    labelStyle += "bg-slate-200 text-slate-500";
+                }
+
+                let iconStatus = "";
+                if (isAnswered) {
+                    if (optIdx === q.correctIdx) {
+                        iconStatus = `<i class="fa-solid fa-circle-check text-emerald-600 text-xl"></i>`;
+                    } else if (optIdx === userSelectedIdx) {
+                        iconStatus = `<i class="fa-solid fa-circle-xmark text-rose-600 text-xl"></i>`;
+                    }
+                }
+
+                btn.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="${labelStyle}">${optionLabels[optIdx]}</span>
+                        <span>${optText}</span>
+                    </div>
+                    ${iconStatus}
+                `;
+
+                if (isAnswered) {
+                    btn.disabled = true;
+                }
+
+                optionsContainer.appendChild(btn);
+            });
+
+            // Feedback Box
+            const feedbackBox = document.getElementById('feedback-box');
+            if (isAnswered) {
+                feedbackBox.classList.remove('hidden');
+                const isCorrect = userSelectedIdx === q.correctIdx;
+
+                if (isCorrect) {
+                    feedbackBox.className = "mt-6 p-4 rounded-2xl border-2 bg-emerald-50 border-emerald-300 text-emerald-900";
+                    document.getElementById('feedback-icon').innerHTML = "✨";
+                    document.getElementById('feedback-title').innerText = "Hebat! Jawaban Kamu Benar";
+                } else {
+                    feedbackBox.className = "mt-6 p-4 rounded-2xl border-2 bg-rose-50 border-rose-300 text-rose-900";
+                    document.getElementById('feedback-icon').innerHTML = "💡";
+                    document.getElementById('feedback-title').innerText = `Kurang Tepat (Jawaban Benar: ${optionLabels[q.correctIdx]}. ${q.options[q.correctIdx]})`;
+                }
+
+                document.getElementById('feedback-text').innerText = q.explanation;
+            } else {
+                feedbackBox.classList.add('hidden');
+            }
+
+            // Navigation buttons state
+            document.getElementById('btn-prev').disabled = currentQIndex === 0;
+            document.getElementById('btn-next').disabled = currentQIndex === quizData.length - 1;
+
+            // Render ulang sidebar grid
+            renderNumbersGrid();
+        }
+
+        // Memilih Opsi Jawaban
+        function selectOption(optIdx) {
+            if (userAnswers.hasOwnProperty(currentQIndex)) return; // Kunci jika sudah diisi
+
+            userAnswers[currentQIndex] = optIdx;
+            saveState();
+            renderCurrentQuestion();
+        }
+
+        // Navigasi Pindah Soal
+        function goToQuestion(index) {
+            if (index < 0 || index >= quizData.length) return;
+            currentQIndex = index;
+            renderCurrentQuestion();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function nextQuestion() {
+            if (currentQIndex < quizData.length - 1) {
+                goToQuestion(currentQIndex + 1);
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQIndex > 0) {
+                goToQuestion(currentQIndex - 1);
+            }
+        }
+
+        // Modal Rekapitulasi Hasil
+        function showResultsModal() {
+            let correct = 0;
+            let wrong = 0;
+            let answeredCount = 0;
+
+            quizData.forEach((q, idx) => {
+                if (userAnswers.hasOwnProperty(idx)) {
+                    answeredCount++;
+                    if (userAnswers[idx] === q.correctIdx) {
+                        correct++;
+                    } else {
+                        wrong++;
+                    }
+                }
+            });
+
+            const unanswered = quizData.length - answeredCount;
+            // Skala nilai 0 - 100
+            const score = Math.round((correct / quizData.length) * 100);
+            const accuracy = Math.round((correct / (answeredCount || 1)) * 100);
+
+            document.getElementById('modal-final-score').innerText = score;
+            document.getElementById('modal-accuracy-text').innerText = `Akurasi ${accuracy}% (${correct} dari 30 Soal Benar)`;
+            document.getElementById('modal-correct-count').innerText = correct;
+            document.getElementById('modal-wrong-count').innerText = wrong;
+            document.getElementById('modal-unanswered-count').innerText = unanswered;
+
+            const modalEmoji = document.getElementById('modal-emoji');
+            const modalMessage = document.getElementById('modal-message');
+
+            if (score >= 85) {
+                modalEmoji.innerText = "🏆";
+                modalMessage.innerText = "Luar biasa! Kamu sudah sangat menguasai konsep penjumlahan dan pengurangan desimal!";
+            } else if (score >= 65) {
+                modalEmoji.innerText = "🌟";
+                modalMessage.innerText = "Bagus sekali! Tetap latih ketelitianmu dalam meluruskan koma desimal ya!";
+            } else if (answeredCount > 0) {
+                modalEmoji.innerText = "📚";
+                modalMessage.innerText = "Terus berlatih! Pelajari kembali penjelasan pada soal bersusun untuk meningkatkan nilaimu.";
+            } else {
+                modalEmoji.innerText = "📝";
+                modalMessage.innerText = "Kamu belum menjawab soal. Yuk, mulai isi soalnya dari nomor 1!";
+            }
+
+            document.getElementById('results-modal').classList.remove('hidden');
+        }
+
+        function closeResultsModal() {
+            document.getElementById('results-modal').classList.add('hidden');
+        }
+
+        // Reset Kuis
+        function confirmResetQuiz() {
+            if (confirm("Apakah kamu yakin ingin mengulang kuis dari awal? Semua jawaban yang tersimpan akan dihapus.")) {
+                userAnswers = {};
+                saveState();
+                currentQIndex = 0;
+                closeResultsModal();
+                renderCurrentQuestion();
+            }
+        }
+
+        // Keyboard Shortcuts for Easy Navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowLeft") {
+                prevQuestion();
+            } else if (e.key === "ArrowRight") {
+                nextQuestion();
+            }
+        });
+
+        // Initialize App
+        window.onload = function() {
+            loadSavedState();
+            renderCurrentQuestion();
+        };
+    </script>
+</body>
+</html>
